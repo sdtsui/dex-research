@@ -58,7 +58,7 @@ In the first step, the orders are hashed together using sha. This makes sense as
 
 We will use a snark to do this job:
 ```
-Snark - TransitionHashes&Validation ( public input: orderHashSha,
+Snark - TransitionHashes ( public input: orderHashSha,
 					Private input: [orders])
 					Output: orderHashPederson
 ```
@@ -130,7 +130,7 @@ Snark - applyAuction(
 	Private: orders
 	Private: touched balances + leaf number + balance merkle proofs per order,
 	Private: FollowUpOrderOfAccount [index of later order touching balance])
-	Output: newstaetRH
+	Output: newstateRH
 ```
 The snark would check the following things:
 
@@ -257,7 +257,7 @@ This snark would check that:
 
 If a provided solution is not challenged, any users can trigger his withdrawal 1 day after the submission, by providing Merkle proof of his balance stored in withdrawalAmounts[blockNr]
 
-```
+```js
 Function processWithdrawal(uint blockNrOfReg, uint amount, address token, bytes MerkleProof){
 	// check that some time passed
 	require(blockNrOfReg + TimeDelta < now)
@@ -302,14 +302,11 @@ For sure the biggest constraint system comes with the snark checking the actual 
 
 In the snark-applyAuction the snark circuits are dominated by the following operations:
 
-- iteration over all orders -> constraints mulitlpy #orders
-- for each order we open 3 leaves: accountleave balanceLeaf_SendingToken, balanceLeaf_ReceivingToken -> 3 * log_2(#balances) * 2 * #pedersonHashConstraints
-- for each order we recalculate the merkle root: accountleave balanceLeaf_SendingToken, balanceLeaf_ReceivingToken -> log_2(#balances) * 2 * #pedersonHashConstraints
+- for each order we open 3 leaves: accountleave, balanceLeaf_SendingToken, balanceLeaf_ReceivingToken -> 3 * log_2(#balances) * 2 * #pedersonHashConstraints
+- for each order we recalculate the merkle root for 2 leaves: accountleave balanceLeaf_SendingToken, balanceLeaf_ReceivingToken -> 2* log_2(#balances) * 2 * #pedersonHashConstraints
 
-That means that the nr of constraints for #orders will be about #orders * log_2(#balances) * 8 * #pedersonHashConstraints
-This means that we could process roughly 5000 orders with 1 mio accounts, if we have 2000 constraints per pedersonHash.
-
-
+That means that the nr of constraints for #orders will be about #orders * log_2(#balances) * 24 * #pedersonHashConstraints
+This means that we could process roughly 5k orders with 0.5M accounts, if we have 2000 constraints per pedersonHash.
 
 Biggest foreseen challenge: Generating a trusted setup with 2^28 constraints.
 
